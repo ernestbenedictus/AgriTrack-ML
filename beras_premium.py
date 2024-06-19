@@ -6,7 +6,6 @@ from tensorflow.keras.layers import LSTM, GRU, Dense, Dropout, Bidirectional
 from tensorflow.keras.optimizers import Adam
 from sklearn.preprocessing import MinMaxScaler
 import json
-import keras.backend as K
 from datetime import datetime
 
 
