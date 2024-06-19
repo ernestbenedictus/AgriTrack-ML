@@ -2,14 +2,17 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import json
+
+from keras.src.layers import Dropout
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime, timedelta
 from keras.models import Sequential
 # from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from keras.layers import LSTM, Dense
 from keras.optimizers import Adam
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 
-df = pd.read_csv('Bawang Putih Bonggol.csv')
+df = pd.read_csv('data/Bawang Putih Bonggol.csv')
 
 
 def replace_comma(df, columns):
@@ -35,8 +38,6 @@ def handle_missing_values(df):
 
 
 df = handle_missing_values(df)
-
-from sklearn.preprocessing import MinMaxScaler
 
 
 def normalize_data(df, exclude_columns):
@@ -92,13 +93,21 @@ X_val_generator = tf.keras.preprocessing.sequence.TimeseriesGenerator(X_val, y_v
 X_test_generator = tf.keras.preprocessing.sequence.TimeseriesGenerator(X_test, y_test, length=timestep, batch_size=1)
 
 model = Sequential()
-model.add(LSTM(units=50, input_shape=(timestep, len(fitur)), return_sequences=True))
+model.add(LSTM(units=100, input_shape=(timestep, len(fitur)), return_sequences=True))
+model.add(Dropout(0.2))  # Adding dropout to prevent overfitting
 model.add(LSTM(units=50))
+model.add(Dropout(0.2))  # Adding dropout to prevent overfitting
 model.add(Dense(units=1))
 
+# Compile the model with a smaller learning rate
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
-history = model.fit(X_train_generator, epochs=50, validation_data=X_val_generator)
+# Callbacks for reducing learning rate and early stopping
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.0001)
+# early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+
+# Train the model with callbacks
+history = model.fit(X_train_generator, epochs=100, validation_data=X_val_generator, callbacks=[reduce_lr])
 
 y_pred = model.predict(X_test_generator)
 
